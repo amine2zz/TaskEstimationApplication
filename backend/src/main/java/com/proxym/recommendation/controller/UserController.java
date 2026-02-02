@@ -32,8 +32,11 @@ public class UserController {
                 .map(user -> {
                     user.setName(userDetails.getName());
                     user.setEmail(userDetails.getEmail());
+                    user.setPassword(userDetails.getPassword());
+                    user.setRole(userDetails.getRole());
                     user.setAge(userDetails.getAge());
                     user.setMonthlyIncome(userDetails.getMonthlyIncome());
+                    user.setBalance(userDetails.getBalance());
                     user.setRiskProfile(userDetails.getRiskProfile());
                     user.setFinancialGoals(userDetails.getFinancialGoals());
                     return ResponseEntity.ok(userRepository.save(user));

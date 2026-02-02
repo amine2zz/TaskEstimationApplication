@@ -45,10 +45,11 @@ public class RecommendationService {
         double ratio = totalSpend > 0 ? investmentSpend / totalSpend : 0;
 
         // Prepare request for AI
+        User user = userRepository.findById(userId).orElseThrow();
         Map<String, Object> aiRequest = new HashMap<>();
         aiRequest.put("user_id", userId);
         aiRequest.put("spending_habits", Map.of("investment_ratio", ratio));
-        aiRequest.put("risk_level", "Medium"); // Default for now
+        aiRequest.put("risk_level", user.getRiskProfile()); 
 
         try {
             // Call Python AI

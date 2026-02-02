@@ -22,6 +22,19 @@ public class TransactionController {
         return transactionRepository.findAll();
     }
 
+    @GetMapping("/user/{userId}")
+    public List<Transaction> getByUserId(@PathVariable Long userId) {
+        return transactionRepository.findByUserId(userId);
+    }
+
+    @PostMapping
+    public Transaction create(@RequestBody Transaction transaction) {
+        if (transaction.getDate() == null) {
+            transaction.setDate(LocalDateTime.now());
+        }
+        return transactionRepository.save(transaction);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         return transactionRepository.findById(id)

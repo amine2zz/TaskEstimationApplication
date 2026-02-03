@@ -147,6 +147,26 @@
   align-items: center;
   margin-bottom: 24px;
   padding: 10px 0;
+  gap: 20px;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-bar input {
+  background: none;
+  border: none;
+  color: var(--text);
+  width: 100%;
+  outline: none;
+  font-size: 0.9rem;
 }
 
 .subtitle {
@@ -381,6 +401,43 @@
   justify-content: center;
   color: var(--text);
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-small:hover {
+  background: var(--glass-border);
+  transform: scale(1.1);
+}
+
+.actions-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-btn,
+.delete-btn {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+}
+
+.edit-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.delete-btn:hover {
+  background: var(--error);
+  color: white;
+  border-color: var(--error);
 }
 
 .btn-secondary {

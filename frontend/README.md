@@ -1,16 +1,24 @@
-# React + Vite
+# 💻 Proxym Frontend (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a modern, high-performance dashboard designed with a "Premium Apple UI" aesthetic.
 
-Currently, two official plugins are available:
+## ✨ Key Features
+- **Glassmorphism Design**: High-end visual style with translucency and blur.
+- **Dynamic Theming**: Support for Light and Dark modes.
+- **Real-time Updates**: Instant feedback on transactions and balance changes.
+- **AI Integration**: Displays customized recommendations fetched from the AI module via the backend.
+- **Admin Suite**: Fully functional CRUD interface for managing system resources.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## 🛠️ Tech Stack
+- **React 19**: Modern UI development.
+- **Vite**: Ultra-fast build tool and dev server.
+- **Framer Motion**: Fluid animations and transitions.
+- **Lucide React**: Clean, consistent iconography.
+- **Axios**: Promised-based HTTP client for API communication.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🚀 Running Locally
+```powershell
+npm install
+npm run dev -- --port 3000
+```
+*Note: The frontend is configured to communicative with the backend at port 8081.*

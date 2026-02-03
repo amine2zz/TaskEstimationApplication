@@ -487,18 +487,71 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
     }
   };
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredData = data.filter(item => {
+    const searchStr = searchQuery.toLowerCase();
+    return (
+      (item.name?.toLowerCase().includes(searchStr)) ||
+      (item.email?.toLowerCase().includes(searchStr)) ||
+      (item.description?.toLowerCase().includes(searchStr)) ||
+      (item.category?.toLowerCase().includes(searchStr)) ||
+      (item.id?.toString().includes(searchStr))
+    );
+  });
+
   useEffect(() => {
     fetchData();
   }, [activeTable]);
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this entry?')) return;
+    if (!window.confirm('Are you sure you want to delete this entry? This action cannot be undone.')) return;
     const endpoint = activeTable === 'products' ? 'products' : activeTable === 'users' ? 'users' : 'transactions';
     try {
       await axios.delete(`${API_BASE}/${endpoint}/${id}`);
       fetchData();
     } catch (err) {
-      alert('Delete failed');
+      alert('Delete failed: ' + (err.response?.data?.message || err.message));
+    }
+  };
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData(item);
+    setShowModal(true);
+  };
+
+  const handleAddNew = () => {
+    setEditingItem(null);
+    if (activeTable === 'products') {
+      setFormData({ name: '', description: '', type: 'Savings', interestRate: 5 });
+    } else if (activeTable === 'users') {
+      setFormData({ name: '', email: '', password: 'password123', role: 'USER', balance: 0, age: 25, riskProfile: 'Medium', financialGoals: 'Savings' });
+    } else {
+      setFormData({ amount: 0, category: 'Food', description: '', date: new Date().toISOString() });
+    }
+    setShowModal(true);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const endpoint = activeTable === 'products' ? 'products' : activeTable === 'users' ? 'users' : 'transactions';
+    try {
+      let payload = { ...formData };
+      if (!editingItem && activeTable === 'logs') {
+        // Find first user if none selected or just use a default for admin-created tx
+        payload.user = { id: 1 };
+      }
+
+      if (editingItem) {
+        await axios.put(`${API_BASE}/${endpoint}/${editingItem.id}`, payload);
+      } else {
+        await axios.post(`${API_BASE}/${endpoint}`, payload);
+      }
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      alert('Save failed: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -507,9 +560,9 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
       <nav className="admin-sidebar glass-card">
         <div className="admin-logo"><ShieldCheck size={24} color="var(--primary)" /> <span>Admin</span></div>
         <div className="nav-items">
-          <button onClick={() => setActiveTable('products')} className={activeTable === 'products' ? 'active' : ''}><Database size={18} /> Products</button>
-          <button onClick={() => setActiveTable('users')} className={activeTable === 'users' ? 'active' : ''}><UserIcon size={18} /> Users</button>
-          <button onClick={() => setActiveTable('logs')} className={activeTable === 'logs' ? 'active' : ''}><BarChart3 size={18} /> Logs</button>
+          <button onClick={() => setActiveTable('products')} className={`nav-link ${activeTable === 'products' ? 'active' : ''}`}><Database size={18} /> Products</button>
+          <button onClick={() => setActiveTable('users')} className={`nav-link ${activeTable === 'users' ? 'active' : ''}`}><UserIcon size={18} /> Users</button>
+          <button onClick={() => setActiveTable('logs')} className={`nav-link ${activeTable === 'logs' ? 'active' : ''}`}><BarChart3 size={18} /> Logs</button>
         </div>
         <div style={{ marginTop: 'auto' }}>
           <button className="nav-link" onClick={toggleTheme}>{isDarkMode ? <Sun size={18} /> : <Moon size={18} />} Mode</button>
@@ -519,8 +572,20 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
 
       <main className="admin-main">
         <header className="admin-header">
-          <div className="search-bar glass-card"><Search size={18} /><input placeholder="Search..." /></div>
-          <h3>Management: {activeTable.toUpperCase()}</h3>
+          <div className="search-bar glass-card">
+            <Search size={18} />
+            <input
+              placeholder={`Search ${activeTable}...`}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <h3>Management: {activeTable === 'logs' ? 'TRANSACTIONS' : activeTable.toUpperCase()}</h3>
+            <button className="btn-primary" onClick={handleAddNew} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+              <Plus size={16} /> Add {activeTable === 'products' ? 'Product' : activeTable === 'users' ? 'User' : 'Transaction'}
+            </button>
+          </div>
         </header>
         <div className="table-container glass-card">
           <table className="admin-table">
@@ -528,19 +593,90 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
               <tr><th>ID</th><th>Primary Field</th><th>Details</th><th>Value</th><th>Actions</th></tr>
             </thead>
             <tbody>
-              {loading ? <tr><td colSpan="5">Loading...</td></tr> : data.map(item => (
+              {loading ? (
+                <tr><td colSpan="5" className="loader">Loading...</td></tr>
+              ) : filteredData.length === 0 ? (
+                <tr><td colSpan="5" style={{ textAlign: 'center', padding: '40px', opacity: 0.5 }}>No matching records found.</td></tr>
+              ) : filteredData.map(item => (
                 <tr key={item.id}>
                   <td>#{item.id}</td>
                   <td>{item.name || item.category || 'N/A'}</td>
-                  <td>{item.type || item.email || item.description}</td>
-                  <td>{item.interestRate ? `${item.interestRate}%` : item.amount ? `$${item.amount}` : item.riskProfile}</td>
-                  <td><button className="delete-btn" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button></td>
+                  <td>{item.type || item.email || item.description || 'No details'}</td>
+                  <td>
+                    {item.interestRate !== undefined ? `${item.interestRate}%` :
+                      item.amount ? `$${item.amount}` :
+                        item.riskProfile || 'N/A'}
+                  </td>
+                  <td className="actions-cell">
+                    <button className="edit-btn" onClick={() => handleEdit(item)}><Edit3 size={16} /></button>
+                    <button className="delete-btn" onClick={() => handleDelete(item.id)}><Trash2 size={16} /></button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </main>
+
+      {/* ADMIN EDIT/ADD MODAL */}
+      <AnimatePresence>
+        {showModal && (
+          <div className="modal-overlay">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="glass-card modal-content" style={{ width: '450px' }}>
+              <h3>{editingItem ? 'Edit' : 'Add New'} {activeTable === 'logs' ? 'Transaction' : activeTable.slice(0, -1)}</h3>
+              <form onSubmit={handleSave} style={{ marginTop: '20px' }}>
+                {activeTable === 'products' && (
+                  <>
+                    <input className="input-field" placeholder="Product Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                    <textarea className="input-field" placeholder="Description" style={{ minHeight: '100px', resize: 'vertical' }} value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} required />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <select className="input-field" value={formData.type || 'Savings'} onChange={e => setFormData({ ...formData, type: e.target.value })}>
+                        <option value="Savings">Savings</option>
+                        <option value="Investment">Investment</option>
+                        <option value="Loan">Loan</option>
+                      </select>
+                      <input className="input-field" type="number" step="0.1" placeholder="Interest Rate %" value={formData.interestRate || ''} onChange={e => setFormData({ ...formData, interestRate: parseFloat(e.target.value) })} required />
+                    </div>
+                  </>
+                )}
+
+                {activeTable === 'users' && (
+                  <>
+                    <input className="input-field" placeholder="Full Name" value={formData.name || ''} onChange={e => setFormData({ ...formData, name: e.target.value })} required />
+                    <input className="input-field" type="email" placeholder="Email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <input className="input-field" type="number" placeholder="Balance ($)" value={formData.balance || 0} onChange={e => setFormData({ ...formData, balance: parseFloat(e.target.value) })} />
+                      <select className="input-field" value={formData.role || 'USER'} onChange={e => setFormData({ ...formData, role: e.target.value })}>
+                        <option value="USER">User</option>
+                        <option value="ADMIN">Admin</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {activeTable === 'logs' && (
+                  <>
+                    <input className="input-field" type="number" placeholder="Amount ($)" value={formData.amount || ''} onChange={e => setFormData({ ...formData, amount: parseFloat(e.target.value) })} required />
+                    <select className="input-field" value={formData.category || 'Food'} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                      <option value="Food">Food</option>
+                      <option value="Rent">Rent</option>
+                      <option value="Investment">Investment</option>
+                      <option value="Subscription">Subscription</option>
+                      <option value="Entertainment">Entertainment</option>
+                    </select>
+                    <input className="input-field" placeholder="Description" value={formData.description || ''} onChange={e => setFormData({ ...formData, description: e.target.value })} required />
+                  </>
+                )}
+
+                <div className="modal-footer">
+                  <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                  <button type="submit" className="btn-primary">Save Changes</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

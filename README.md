@@ -1,76 +1,37 @@
-# Intelligent Financial Product Recommendation Engine (PRX-2026-15)
+# 🚀 Proxym Recommendation Engine - Quick Start
 
-## 🌟 Project Overview
-This project is a high-performance, AI-driven banking module designed to recommend financial products (Savings, Investments, Loans, Insurance) based on deep analysis of user spending habits and risk profiles. 
+This project consists of three main modules that work together to provide an AI-driven financial recommendation system.
 
-It features a **Premium Apple-inspired UI** and a hybrid backend architecture combining **Spring Boot** for transaction management and **FastAPI** for real-time ML processing.
+## 📂 Project Structure
+- `/frontend`: React + Vite dashboard with Apple-inspired design.
+- `/backend`: Java Spring Boot core API handling data and security.
+- `/ai_module`: Python FastAPI service providing ML-based recommendations.
+
+## ⚡ Unified Startup
+To start all services at once, use the `start.bat` file in the root directory:
+```powershell
+.\start.bat
+```
+
+## 🌐 Dashboard Access
+- **Frontend**: [http://localhost:3000](http://localhost:3000)
+- **Backend API**: [http://localhost:8081](http://localhost:8081)
+- **AI Module**: [http://localhost:8005](http://localhost:8005)
 
 ---
 
-## 🏗️ Architecture
-- **Frontend**: React JS + Vite (Port 3000)
-- **Backend (Core)**: Spring Boot (Port 8081)
-- **AI Module**: Python FastAPI (Port 8005)
+## 🏗️ Technical Stack
+- **Languages**: Java 17, Python 3.14, JavaScript (React 19)
+- **Frameworks**: Spring Boot, FastAPI, Vite
 - **Database**: PostgreSQL 17
+- **Styling**: Vanilla CSS with Glassmorphism
+- **Icons**: Lucide React
+- **Animations**: Framer Motion
 
----
+## 🛠️ Management & Admin
+Access the Admin Panel at `/admin` to manage:
+- **Products**: Create and edit financial products.
+- **Users**: Manage accounts and balance.
+- **Transactions**: Monitor and log financial activity.
 
-## ⚙️ Prerequisites
-- **Java**: 17.0.12
-- **Node.js**: v25.4.0
-- **Python**: 3.14.2
-- **Maven Daemon (mvnd)**: Located in Desktop folder
-- **PostgreSQL**: Version 17 (Running on default port 5432)
-
----
-
-## 🚀 Getting Started
-
-### 1. Database Initialization
-1. Open **pgAdmin 4**.
-2. Create a database named `proxym_recommendation`.
-3. Connectivity Check:
-   - **User**: `postgres`
-   - **Password**: `4175` (Configured in `application.properties`)
-
-### 2. Start the AI Module (ML API)
-```powershell
-cd ai_module
-# Activate environment
-..\.venv\Scripts\Activate.ps1
-# Launch Service
-python main.py
-```
-*Live at:* [http://localhost:8005](http://localhost:8005)
-
-### 3. Start the Backend (Core API)
-```powershell
-cd backend
-# Build and Run with Maven Daemon
-& "C:\Users\ghari\OneDrive\Bureau\maven-mvnd-1.0.3-windows-amd64\maven-mvnd-1.0.3-windows-amd64\bin\mvnd.exe" spring-boot:run
-```
-*Live at:* [http://localhost:8081](http://localhost:8081)
-
-### 4. Start the Frontend (User Dashboard)
-```powershell
-cd frontend
-# Install dependencies
-npm install
-# Start dev server on specific port
-npm run dev -- --port 3000
-```
-*Live at:* [http://localhost:3000](http://localhost:3000)
-
----
-
-## 🛠️ Current Status & Implemented Features
-- [x] **Database Schema**: Unified models for `User`, `Transaction`, and `FinancialProduct`.
-- [x] **AI Engine**: FastAPI implementation with Spending & Risk Ratio logic.
-- [x] **Auto-Port Conflict Resolution**: Configured custom ports (8081, 8005, 3000) to avoid common port conflicts.
-- [x] **Design System**: Premium CSS baseline with glassmorphism effects.
-
-## 📁 Project Structure
-- `/ai_module`: Python-based AI recommendation logic.
-- `/backend`: Java Spring Boot enterprise backend.
-- `/frontend`: Responsive React dashboard.
-- `/.venv`: Pre-configured Python virtual environment.
+Default Admin: `admin@proxym.com` / `admin`

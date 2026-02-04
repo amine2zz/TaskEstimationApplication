@@ -29,14 +29,20 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.count() == 0) {
-            System.out.println("🌱 Seeding Database with Mock Data...");
+        if (userRepository.count() > 0) {
+            System.out.println("✅ Database already has data. Skipping re-seeding.");
+            return;
+        }
+
+        System.out.println("🌱 Database is empty. Seeding with Extensive Mock Data...");
 
             // 1. Create Users
-            User admin = new User(null, "Admin User", "admin@proxym.com", "admin", "ADMIN", 40, 0.0, 0.0, "Low", "Management");
+            User admin = new User(null, "Admin User", "admin@proxym.com", "admin", "ADMIN", 40, 0.0, 100000.0, "Low", "Management");
             User john = new User(null, "John Doe", "john@email.com", "password", "USER", 32, 5500.0, 45280.0, "Low", "Savings");
-            User sarah = new User(null, "Sarah Connor", "sarah@email.com", "password", "USER", 28, 7200.0, 12400.0, "High", "Investment");
-            userRepository.saveAll(Arrays.asList(admin, john, sarah));
+            User sarah = new User(null, "Sarah Connor", "sarah@email.com", "password", "USER", 28, 8200.0, 12400.0, "High", "Investment");
+            User mike = new User(null, "Mike Ross", "mike@email.com", "password", "USER", 35, 6000.0, 8500.0, "Medium", "Loan Management");
+            User amine = new User(null, "Amine", "amine@gmail.com", "password", "USER", 30, 7500.0, 15000.0, "Medium", "Growth");
+            userRepository.saveAll(Arrays.asList(admin, john, sarah, mike, amine));
 
             // 2. Create Products
             FinancialProduct p1 = new FinancialProduct(null, "Secure Yield Savings", "SAVINGS", "High-interest savings account with zero risk.", 4.5, 100.0);
@@ -44,22 +50,38 @@ public class DataInitializer implements CommandLineRunner {
             FinancialProduct p3 = new FinancialProduct(null, "Flexi-Loan Silver", "LOAN", "Low-interest personal loan for major purchases.", 6.5, 0.0);
             FinancialProduct p4 = new FinancialProduct(null, "Global Tech ETF", "INVESTMENT", "Investment in top tech companies worldwide.", 15.2, 1000.0);
             FinancialProduct p5 = new FinancialProduct(null, "Premium Plus Savings", "SAVINGS", "Exclusive savings with higher yield for large balances.", 5.2, 10000.0);
-            productRepository.saveAll(Arrays.asList(p1, p2, p3, p4, p5));
+            FinancialProduct p6 = new FinancialProduct(null, "Real Estate REIT", "INVESTMENT", "Diversified real estate investment trust.", 8.5, 500.0);
+            productRepository.saveAll(Arrays.asList(p1, p2, p3, p4, p5, p6));
 
-            // 3. Create Transactions for John (Low Risk / Savings focus)
-            transactionRepository.save(new Transaction(null, john, 1500.0, "Rent", LocalDateTime.now().minusDays(30), "Monthly Rent"));
-            transactionRepository.save(new Transaction(null, john, 220.5, "Food", LocalDateTime.now().minusDays(25), "Grocery Store"));
-            transactionRepository.save(new Transaction(null, john, 45.0, "Subscription", LocalDateTime.now().minusDays(20), "Netflix/Spotify"));
-            transactionRepository.save(new Transaction(null, john, 120.0, "Utilities", LocalDateTime.now().minusDays(15), "Electricity Bill"));
-            transactionRepository.save(new Transaction(null, john, 50.0, "Investment", LocalDateTime.now().minusDays(10), "Small bond buy"));
+            // 3. Generate 6 Months of transaction history
+            String[] categories = {"Food", "Rent", "Subscription", "Utilities", "Investment", "Entertainment", "Shopping", "Transport"};
+            
+            for (User user : Arrays.asList(john, sarah, mike, amine)) {
+                for (int month = 0; month < 6; month++) {
+                    LocalDateTime baseDate = LocalDateTime.now().minusMonths(month);
+                    
+                    // Fixed Monthly Rent
+                    transactionRepository.save(new Transaction(null, user, 1200.0 + (Math.random() * 300), "Rent", baseDate.withDayOfMonth(1), "Monthly Rent"));
+                    
+                    // Random daily/weekly transactions
+                    for (int i = 0; i < 15; i++) {
+                        String cat = categories[(int)(Math.random() * categories.length)];
+                        double amount = 10 + (Math.random() * 200);
+                        
+                        // Override for specific user profiles
+                        if (user.getName().contains("John") && Math.random() > 0.8) {
+                            cat = "Savings"; // John likes to save
+                            amount = 500;
+                        } else if (user.getName().contains("Sarah") && Math.random() > 0.6) {
+                            cat = "Investment"; // Sarah is aggressive
+                            amount = 1000 + (Math.random() * 2000);
+                        }
+                        
+                        transactionRepository.save(new Transaction(null, user, Math.round(amount * 100.0) / 100.0, cat, baseDate.withDayOfMonth(1 + (int)(Math.random() * 27)), "Transaction " + i));
+                    }
+                }
+            }
 
-            // 4. Create Transactions for Sarah (High Risk / Investment focus)
-            transactionRepository.save(new Transaction(null, sarah, 2000.0, "Investment", LocalDateTime.now().minusDays(20), "Tech Stock purchase"));
-            transactionRepository.save(new Transaction(null, sarah, 1500.0, "Investment", LocalDateTime.now().minusDays(15), "Bitcoin buy"));
-            transactionRepository.save(new Transaction(null, sarah, 300.0, "Entertainment", LocalDateTime.now().minusDays(10), "Concert tickets"));
-            transactionRepository.save(new Transaction(null, sarah, 800.0, "Shopping", LocalDateTime.now().minusDays(5), "New Laptop"));
-
-            System.out.println("✅ Database Seeding Complete!");
-        }
+            System.out.println("✅ Database Seeding Complete with 6 Months of Data!");
     }
 }

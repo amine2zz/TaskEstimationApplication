@@ -50,6 +50,8 @@ public class RecommendationService {
         aiRequest.put("user_id", userId);
         aiRequest.put("spending_habits", Map.of("investment_ratio", ratio));
         aiRequest.put("risk_level", user.getRiskProfile()); 
+        aiRequest.put("balance", user.getBalance());
+        aiRequest.put("monthly_income", user.getMonthlyIncome());
 
         try {
             // Call Python AI

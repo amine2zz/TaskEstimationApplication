@@ -1,12 +1,11 @@
 package com.proxym.recommendation.controller;
 
 import com.proxym.recommendation.model.Transaction;
-import com.proxym.recommendation.repository.TransactionRepository;
+import com.proxym.recommendation.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,33 +14,36 @@ import java.util.List;
 public class TransactionController {
 
     @Autowired
-    private TransactionRepository transactionRepository;
+    private TransactionService transactionService;
 
     @GetMapping
     public List<Transaction> getAll() {
-        return transactionRepository.findAll();
+        return transactionService.getAllTransactions();
     }
 
     @GetMapping("/user/{userId}")
     public List<Transaction> getByUserId(@PathVariable Long userId) {
-        return transactionRepository.findByUserId(userId);
+        return transactionService.getTransactionsByUserId(userId);
+    }
+
+    @GetMapping("/{id}")
+    public Transaction getById(@PathVariable Long id) {
+        return transactionService.getTransactionById(id);
     }
 
     @PostMapping
     public Transaction create(@RequestBody Transaction transaction) {
-        if (transaction.getDate() == null) {
-            transaction.setDate(LocalDateTime.now());
-        }
-        return transactionRepository.save(transaction);
+        return transactionService.createTransaction(transaction);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Transaction> update(@PathVariable Long id, @RequestBody Transaction transactionDetails) {
+        return ResponseEntity.ok(transactionService.updateTransaction(id, transactionDetails));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        return transactionRepository.findById(id)
-                .map(transaction -> {
-                    transactionRepository.delete(transaction);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        transactionService.deleteTransaction(id);
+        return ResponseEntity.ok().build();
     }
 }

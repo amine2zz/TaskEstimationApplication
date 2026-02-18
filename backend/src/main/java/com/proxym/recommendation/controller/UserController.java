@@ -1,7 +1,7 @@
 package com.proxym.recommendation.controller;
 
 import com.proxym.recommendation.model.User;
-import com.proxym.recommendation.repository.UserRepository;
+import com.proxym.recommendation.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,43 +14,31 @@ import java.util.List;
 public class UserController {
 
     @Autowired
-    private UserRepository userRepository;
+    private UserService userService;
 
     @GetMapping
     public List<User> getAll() {
-        return userRepository.findAll();
+        return userService.getAllUsers();
+    }
+
+    @GetMapping("/{id}")
+    public User getById(@PathVariable Long id) {
+        return userService.getUserById(id);
     }
 
     @PostMapping
     public User create(@RequestBody User user) {
-        return userRepository.save(user);
+        return userService.createUser(user);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User userDetails) {
-        return userRepository.findById(id)
-                .map(user -> {
-                    user.setName(userDetails.getName());
-                    user.setEmail(userDetails.getEmail());
-                    user.setPassword(userDetails.getPassword());
-                    user.setRole(userDetails.getRole());
-                    user.setAge(userDetails.getAge());
-                    user.setMonthlyIncome(userDetails.getMonthlyIncome());
-                    user.setBalance(userDetails.getBalance());
-                    user.setRiskProfile(userDetails.getRiskProfile());
-                    user.setFinancialGoals(userDetails.getFinancialGoals());
-                    return ResponseEntity.ok(userRepository.save(user));
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(userService.updateUser(id, userDetails));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        return userRepository.findById(id)
-                .map(user -> {
-                    userRepository.delete(user);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
+        userService.deleteUser(id);
+        return ResponseEntity.ok().build();
     }
 }

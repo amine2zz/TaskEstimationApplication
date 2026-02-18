@@ -1,21 +1,21 @@
 # 🤖 Proxym AI Module (FastAPI)
 
-A specialized Python service dedicated to real-time recommendation processing and ML logic.
+A specialized microservice providing financial intelligence and personalized product recommendations using a granular, rule-based inference engine.
+
+## 🏗️ Intelligence Units
+The recommendation engine is decomposed into specialized logical units:
+- **Spending Unit**: Analyzes investment-to-spending ratios to suggest growth assets.
+- **Risk Unit**: Maps user risk profiles (High/Med/Low) to curated portfolios.
+- **Liquidity Unit**: Detects idle cash or bridging needs to suggest savings or loan products.
 
 ## 🛠️ Tech Stack
-- **Python 3.14**: Execution environment.
-- **FastAPI**: High-performance asynchronous API framework.
-- **Uvicorn**: ASGI server for deployment.
-- **Pydantic**: Data validation and schema definition.
-
-## 🧠 Logic
-The module analyzes:
-1. **Investment Ratio**: percentage of income/spending allocated to growth.
-2. **Risk Perception**: maps user profile to appropriate volatility levels.
-3. **Transaction Depth**: identifying spending patterns.
+- **Python 3.12+**: High-performance backend logic.
+- **FastAPI**: Modern, asynchronous web framework.
+- **Pydantic**: Type-safe data validation.
+- **Uvicorn**: ASGI server implementation.
 
 ## 🚀 Execution
-```powershell
-python main.py
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8005
 ```
 *Accessible on port 8005.*

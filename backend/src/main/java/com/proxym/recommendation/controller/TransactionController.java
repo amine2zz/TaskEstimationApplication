@@ -1,5 +1,6 @@
 package com.proxym.recommendation.controller;
 
+import com.proxym.recommendation.dto.TransactionDTO;
 import com.proxym.recommendation.model.Transaction;
 import com.proxym.recommendation.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,42 +9,46 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST controller for managing customer transactions.
+ */
 @RestController
 @RequestMapping("/api/transactions")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class TransactionController {
 
     @Autowired
     private TransactionService transactionService;
 
     @GetMapping
-    public List<Transaction> getAll() {
+    public List<TransactionDTO> getAllTransactions() {
         return transactionService.getAllTransactions();
     }
 
     @GetMapping("/user/{userId}")
-    public List<Transaction> getByUserId(@PathVariable Long userId) {
+    public List<TransactionDTO> getTransactionsByUserId(@PathVariable Long userId) {
         return transactionService.getTransactionsByUserId(userId);
     }
 
     @GetMapping("/{id}")
-    public Transaction getById(@PathVariable Long id) {
-        return transactionService.getTransactionById(id);
+    public ResponseEntity<TransactionDTO> getTransactionById(@PathVariable Long id) {
+        return ResponseEntity.ok(transactionService.getTransactionById(id));
     }
 
     @PostMapping
-    public Transaction create(@RequestBody Transaction transaction) {
-        return transactionService.createTransaction(transaction);
+    public ResponseEntity<TransactionDTO> createTransaction(@RequestBody Transaction transaction) {
+        return ResponseEntity.ok(transactionService.createTransaction(transaction));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Transaction> update(@PathVariable Long id, @RequestBody Transaction transactionDetails) {
+    public ResponseEntity<TransactionDTO> updateTransaction(@PathVariable Long id,
+            @RequestBody Transaction transactionDetails) {
         return ResponseEntity.ok(transactionService.updateTransaction(id, transactionDetails));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteTransaction(@PathVariable Long id) {
         transactionService.deleteTransaction(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

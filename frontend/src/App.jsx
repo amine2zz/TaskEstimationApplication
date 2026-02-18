@@ -182,12 +182,11 @@ const Dashboard = ({ user, onLogout, isDarkMode, toggleTheme }) => {
       const [recRes, txRes, userRes] = await Promise.all([
         axios.get(`${API_BASE}/recommendations/${user.id}`),
         axios.get(`${API_BASE}/transactions/user/${user.id}`),
-        axios.get(`${API_BASE}/users`) // Get updated user data (hacky, should really have a findOne)
+        axios.get(`${API_BASE}/users/${user.id}`)
       ]);
       setRecs(recRes.data);
       setTransactions(txRes.data.sort((a, b) => b.id - a.id));
-      const updated = userRes.data.find(u => u.id === user.id);
-      if (updated) setCurrentUser(updated);
+      setCurrentUser(userRes.data);
     } catch (err) {
       console.error('Data fetch error', err);
     } finally {
@@ -524,7 +523,7 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
   const handleAddNew = () => {
     setEditingItem(null);
     if (activeTable === 'products') {
-      setFormData({ name: '', description: '', type: 'Savings', interestRate: 5 });
+      setFormData({ name: '', description: '', type: 'Savings', interestRate: 5, minimumEntry: 100 });
     } else if (activeTable === 'users') {
       setFormData({ name: '', email: '', password: 'password123', role: 'USER', balance: 0, age: 25, riskProfile: 'Medium', financialGoals: 'Savings' });
     } else {
@@ -636,6 +635,7 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
                         <option value="Loan">Loan</option>
                       </select>
                       <input className="input-field" type="number" step="0.1" placeholder="Interest Rate %" value={formData.interestRate || ''} onChange={e => setFormData({ ...formData, interestRate: parseFloat(e.target.value) })} required />
+                      <input className="input-field" type="number" placeholder="Min. Entry ($)" value={formData.minimumEntry || ''} onChange={e => setFormData({ ...formData, minimumEntry: parseFloat(e.target.value) })} required />
                     </div>
                   </>
                 )}
@@ -646,11 +646,18 @@ const AdminPanel = ({ onLogout, isDarkMode, toggleTheme }) => {
                     <input className="input-field" type="email" placeholder="Email" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} required />
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                       <input className="input-field" type="number" placeholder="Balance ($)" value={formData.balance || 0} onChange={e => setFormData({ ...formData, balance: parseFloat(e.target.value) })} />
+                      <input className="input-field" type="number" placeholder="Income ($)" value={formData.monthlyIncome || 0} onChange={e => setFormData({ ...formData, monthlyIncome: parseFloat(e.target.value) })} />
                       <select className="input-field" value={formData.role || 'USER'} onChange={e => setFormData({ ...formData, role: e.target.value })}>
                         <option value="USER">User</option>
                         <option value="ADMIN">Admin</option>
                       </select>
+                      <select className="input-field" value={formData.riskProfile || 'Medium'} onChange={e => setFormData({ ...formData, riskProfile: e.target.value })}>
+                        <option value="Low">Low Risk</option>
+                        <option value="Medium">Medium Risk</option>
+                        <option value="High">High Risk</option>
+                      </select>
                     </div>
+                    <input className="input-field" placeholder="New Password (leave blank to keep current)" type="password" value={formData.password || ''} onChange={e => setFormData({ ...formData, password: e.target.value })} />
                   </>
                 )}
 

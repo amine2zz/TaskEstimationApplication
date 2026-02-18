@@ -1,5 +1,6 @@
 package com.proxym.recommendation.controller;
 
+import com.proxym.recommendation.dto.FinancialProductDTO;
 import com.proxym.recommendation.model.FinancialProduct;
 import com.proxym.recommendation.service.FinancialProductService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,37 +9,41 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * REST controller for managing the financial product catalog.
+ */
 @RestController
 @RequestMapping("/api/products")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "*")
 public class FinancialProductController {
 
     @Autowired
     private FinancialProductService productService;
 
     @GetMapping
-    public List<FinancialProduct> getAll() {
+    public List<FinancialProductDTO> getAllProducts() {
         return productService.getAllProducts();
     }
 
     @GetMapping("/{id}")
-    public FinancialProduct getById(@PathVariable Long id) {
-        return productService.getProductById(id);
+    public ResponseEntity<FinancialProductDTO> getProductById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     @PostMapping
-    public FinancialProduct create(@RequestBody FinancialProduct product) {
-        return productService.createProduct(product);
+    public ResponseEntity<FinancialProductDTO> createProduct(@RequestBody FinancialProduct product) {
+        return ResponseEntity.ok(productService.createProduct(product));
+            
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<FinancialProduct> update(@PathVariable Long id, @RequestBody FinancialProduct productDetails) {
+    public ResponseEntity<FinancialProductDTO> updateProduct(@PathVariable Long id, @RequestBody FinancialProduct productDetails) {
         return ResponseEntity.ok(productService.updateProduct(id, productDetails));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 }

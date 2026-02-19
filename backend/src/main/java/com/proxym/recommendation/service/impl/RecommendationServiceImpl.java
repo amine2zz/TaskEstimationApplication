@@ -1,12 +1,10 @@
 package com.proxym.recommendation.service.impl;
 
 import com.proxym.recommendation.dto.FinancialProductDTO;
-import com.proxym.recommendation.dto.TransactionDTO;
 import com.proxym.recommendation.model.FinancialProduct;
 import com.proxym.recommendation.model.User;
 import com.proxym.recommendation.repository.FinancialProductRepository;
 import com.proxym.recommendation.service.RecommendationService;
-import com.proxym.recommendation.service.TransactionService;
 import com.proxym.recommendation.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,9 +23,6 @@ import java.util.stream.Collectors;
 public class RecommendationServiceImpl implements RecommendationService {
 
     @Autowired
-    private TransactionService transactionService;
-
-    @Autowired
     private FinancialProductRepository productRepository;
 
     @Autowired
@@ -42,65 +37,39 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<FinancialProductDTO> getRecommendations(Long userId) {
         User user = userService.getUserEntityById(userId);
-        List<TransactionDTO> transactionDTOs = transactionService.getTransactionsByUserId(userId);
 
-        double investmentRatio = calculateInvestmentRatio(transactionDTOs);
-        return attemptAiRecommendations(userId, user, investmentRatio);
-    }
+        // 1. Get raw strategic advice from AI Module
+        String suggestedType = callAiForStrategy(user);
+        System.out.println("🤖 AI Suggested Strategy for " + user.getName() + ": " + suggestedType);
 
-    private List<FinancialProductDTO> attemptAiRecommendations(Long userId, User user, double ratio) {
-        try {
-            Map<String, Object> aiRequest = prepareAiRequest(userId, user, ratio);
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> aiResult = restTemplate.postForObject(aiModuleUrl, aiRequest, List.class);
-
-            if (aiResult != null && !aiResult.isEmpty()) {
-                List<String> suggestedNames = aiResult.stream()
-                        .map(r -> (String) r.get("product_name"))
-                        .collect(Collectors.toList());
-
-                return productRepository.findAll().stream()
-                        .filter(p -> suggestedNames.contains(p.getName()))
-                        .map(this::mapToDTO)
-                        .collect(Collectors.toList());
-            }
-        } catch (Exception e) {
-            System.err.println("AI Error: " + e.getMessage());
-        }
-        return getFallbackRecommendations(ratio);
-    }
-
-    private double calculateInvestmentRatio(List<TransactionDTO> transactions) {
-        if (transactions == null || transactions.isEmpty())
-            return 0.0;
-        double total = transactions.stream().mapToDouble(TransactionDTO::getAmount).sum();
-        if (total <= 0)
-            return 0.0;
-
-        double inv = transactions.stream()
-                .filter(t -> "Investment".equalsIgnoreCase(t.getCategory()))
-                .mapToDouble(TransactionDTO::getAmount)
-                .sum();
-        return inv / total;
-    }
-
-    private List<FinancialProductDTO> getFallbackRecommendations(double ratio) {
-        String type = ratio > 0.2 ? "INVESTMENT" : "SAVINGS";
-        return productRepository.findAll().stream()
-                .filter(p -> type.equals(p.getType()))
-                .limit(3)
+        // 2. Map AI category to real database products
+        return productRepository.findByType(suggestedType).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
 
-    private Map<String, Object> prepareAiRequest(Long userId, User user, double ratio) {
-        Map<String, Object> req = new HashMap<>();
-        req.put("user_id", userId);
-        req.put("spending_habits", Map.of("investment_ratio", ratio));
-        req.put("risk_level", user.getRiskProfile());
-        req.put("balance", user.getBalance());
-        req.put("monthly_income", user.getMonthlyIncome());
-        return req;
+    private String callAiForStrategy(User user) {
+        try {
+            Map<String, Object> req = new HashMap<>();
+            req.put("credit_score", 700); // Default if not in user model
+            req.put("age", user.getAge());
+            req.put("tenure", 5);
+            req.put("balance", user.getBalance());
+            req.put("num_products", 2);
+            req.put("has_crcard", 1);
+            req.put("is_active", 1);
+            req.put("salary", user.getMonthlyIncome());
+            req.put("satisfaction", 5);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = restTemplate.postForObject(aiModuleUrl, req, Map.class);
+            if (response != null && response.containsKey("prediction")) {
+                return (String) response.get("prediction");
+            }
+        } catch (Exception e) {
+            System.err.println("⚠️ AI Strategic Module unreachable, using fallback. Error: " + e.getMessage());
+        }
+        return user.getBalance() > 5000 ? "INVESTMENT" : "SAVINGS"; // Hard fallback
     }
 
     private FinancialProductDTO mapToDTO(FinancialProduct p) {

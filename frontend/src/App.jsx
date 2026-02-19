@@ -19,13 +19,121 @@ import {
   Edit3,
   X,
   History,
-  Activity
+  Activity,
+  MessageCircle,
+  Send,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import './App.css';
 
 const API_BASE = 'http://localhost:8081/api';
+const AI_BASE_URL = 'http://localhost:8005';
+
+// --- SMART AI CHAT COMPONENT ---
+const SmartChat = ({ user, transactions }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'ai', content: `Hello ${user.name}! I'm Proxym AI. I've analyzed your ${user.balance.toLocaleString()} balance and recent activity. How can I help you?` }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const chatBodyRef = React.useRef(null);
+
+  // Auto-scroll to bottom whenever messages change
+  useEffect(() => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
+    }
+  }, [messages, isTyping]);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+
+    const userMsg = input;
+    setInput('');
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
+    setIsTyping(true);
+
+    try {
+      const context = {
+        name: user.name,
+        balance: user.balance,
+        salary: user.monthlyIncome,
+        age: user.age,
+        risk_profile: user.riskProfile,
+        num_products: transactions.length,
+        transactions: transactions.slice(0, 5) // Send some context
+      };
+
+      const res = await axios.post(`${AI_BASE_URL}/chat`, {
+        message: userMsg,
+        user_context: context
+      });
+
+      setMessages(prev => [...prev, { role: 'ai', content: res.data.response }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: 'ai', content: "I'm having trouble connecting to my brain right now. Please try again later!" }]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  return (
+    <div className="smart-chat-wrapper">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            className="chat-window glass-card"
+          >
+            <div className="chat-header">
+              <div className="status-dot"></div>
+              <span>Proxym AI Assistant</span>
+              <button className="close-chat-btn" onClick={() => setIsOpen(false)}><X size={18} /></button>
+            </div>
+
+            <div className="chat-body" ref={chatBodyRef}>
+              {messages.map((msg, i) => (
+                <div key={i} className={`chat-bubble ${msg.role}`}>
+                  {msg.content.split('\n').map((line, index) => (
+                    <React.Fragment key={index}>
+                      {line}
+                      {index < msg.content.split('\n').length - 1 && <br />}
+                    </React.Fragment>
+                  ))}
+                </div>
+              ))}
+              {isTyping && <div className="chat-bubble ai typing"><Loader2 className="spin" size={16} /> thinking...</div>}
+            </div>
+
+            <form className="chat-footer" onSubmit={handleSend}>
+              <input
+                placeholder="Ask about your balance or advice..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+              />
+              <button type="submit"><Send size={18} /></button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className="chat-toggle-btn"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X size={24} /> : <MessageCircle size={24} />}
+      </motion.button>
+    </div>
+  );
+};
 
 // --- AUTH HOOK ---
 const useAuth = () => {
@@ -460,6 +568,7 @@ const Dashboard = ({ user, onLogout, isDarkMode, toggleTheme }) => {
           </div>
         )}
       </AnimatePresence>
+      <SmartChat user={currentUser} transactions={transactions} />
     </div>
   );
 };

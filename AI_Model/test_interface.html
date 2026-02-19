@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proxym AI Model Tester</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --bg: #F5F5F7;
+            --card: #FFFFFF;
+            --text: #1D1D1F;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.8rem;
+            margin-bottom: 0.3rem;
+            opacity: 0.7;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #D2D2D7;
+            border-radius: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: #F2F2F7;
+            display: none;
+            text-align: center;
+        }
+
+        .recommendation {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔍 Proxym AI Tester</h1>
+        <div class="input-group">
+            <label>Credit Score (300-850)</label>
+            <input type="number" id="creditScore" value="750">
+        </div>
+        <div class="input-group">
+            <label>Age</label>
+            <input type="number" id="age" value="35">
+        </div>
+        <div class="input-group">
+            <label>Balance ($)</label>
+            <input type="number" id="balance" value="60000">
+        </div>
+        <div class="input-group">
+            <label>Estimated Salary ($)</label>
+            <input type="number" id="salary" value="95000">
+        </div>
+        <div class="input-group">
+            <label>Is Active Member?</label>
+            <select id="isActive">
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+        <button onclick="testModel()">Analyze & Recommend</button>
+
+        <div id="result">
+            <p>Target Recommendation:</p>
+            <div class="recommendation" id="recText">INVESTMENT</div>
+        </div>
+
+        <hr style="margin: 2rem 0; opacity: 0.1;">
+
+        <div class="chat-section">
+            <h1>💬 Smart Assistant Test</h1>
+            <div id="chatHistory"
+                style="height: 150px; overflow-y: auto; background: #F2F2F7; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; font-size: 0.9rem; text-align: left;">
+                <div style="color: var(--primary); margin-bottom: 0.5rem;">AI: Hello! Ask me about loans or investments.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="chatInput" placeholder="How can I invest my money?">
+                <button onclick="testChat()" style="width: 80px; margin-top: 0; padding: 0.5rem;">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testChat() {
+            const msg = document.getElementById('chatInput').value;
+            const history = document.getElementById('chatHistory');
+            if (!msg) return;
+
+            // Get context from the form above
+            const context = {
+                credit_score: parseInt(document.getElementById('creditScore').value),
+                age: parseInt(document.getElementById('age').value),
+                balance: parseFloat(document.getElementById('balance').value),
+                salary: parseFloat(document.getElementById('salary').value),
+                num_products: 2
+            };
+
+            history.innerHTML += `<div><b>You:</b> ${msg}</div>`;
+            document.getElementById('chatInput').value = '';
+
+            try {
+                const response = await fetch('http://localhost:8005/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, user_context: context })
+                });
+                const result = await response.json();
+                history.innerHTML += `<div style="color: var(--primary); margin-top: 0.5rem;"><b>AI:</b> ${result.response}</div>`;
+                history.scrollTop = history.scrollHeight;
+            } catch (err) {
+                alert('Connection failed.');
+            }
+        }
+
+        async function testModel() {
+            const data = {
+                credit_score: parseInt(document.getElementById('creditScore').value),
+                age: parseInt(document.getElementById('age').value),
+                tenure: 5,
+                balance: parseFloat(document.getElementById('balance').value),
+                num_products: 2,
+                has_crcard: 1,
+                is_active: parseInt(document.getElementById('isActive').value),
+                salary: parseFloat(document.getElementById('salary').value),
+                satisfaction: 4
+            };
+
+            try {
+                const response = await fetch('http://localhost:8005/recommend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                document.getElementById('recText').innerText = result.recommendation || 'Error';
+                document.getElementById('result').style.display = 'block';
+            } catch (err) {
+                alert('Connection to AI Module failed. Is it running on port 8005?');
+            }
+        }
+    </script>
+</body>
+
+</html>

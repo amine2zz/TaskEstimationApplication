@@ -1,177 +1,139 @@
+import pandas as pd
+import joblib
+import os
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-import random
-import logging
+from typing import List, Optional
 
-# Configure logging to track AI operations
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# --- PATH CONFIGURATION ---
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+AI_MODEL_DIR = os.path.join(DIR_PATH, "..", "AI_Model")
 
-app = FastAPI(
-    title="Recommendation AI Module",
-    description="Microservice providing financial intelligence for product recommendations."
+app = FastAPI(title="Proxym Smart Banking API")
+
+# Enable CORS for frontend/testing interface
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-class UserData(BaseModel):
-    """Input schema for user financial data."""
-    user_id: int
-    spending_habits: Dict[str, Any]
-    risk_level: str
+# --- GLOBAL MODEL LOADING ---
+try:
+    print("🧠 Loading Strategic Brain...")
+    strategic_model = joblib.load(os.path.join(AI_MODEL_DIR, "financial_recommender.pkl"))
+    data_scaler = joblib.load(os.path.join(AI_MODEL_DIR, "data_scaler.pkl"))
+    
+    print("🔍 Loading Knowledge Base (RAG)...")
+    kb_model = SentenceTransformer('all-MiniLM-L6-v2')
+    kb_index = faiss.read_index(os.path.join(AI_MODEL_DIR, "kb_index.faiss"))
+    kb_data = joblib.load(os.path.join(AI_MODEL_DIR, "kb_metadata.pkl"))
+    print("✅ AI Ecosystem Loaded Successfully.")
+except Exception as e:
+    print(f"⚠️ Warning: Could not load all AI components: {e}")
+
+# --- SCHEMAS ---
+class UserFinancials(BaseModel):
+    credit_score: int
+    age: int
+    tenure: int
     balance: float
-    monthly_income: float
+    num_products: int
+    has_crcard: int
+    is_active: int
+    salary: float
+    satisfaction: int
 
-class Recommendation(BaseModel):
-    """Output schema for a single financial product recommendation."""
-    product_name: str
-    confidence: float
-    reason: str
-    type: str # SAVINGS, INVESTMENT, LOAN
+class ChatMessage(BaseModel):
+    message: str
+    user_context: Optional[dict] = None
 
-# --- Spending Logic Decomposition ---
+# --- ENDPOINTS ---
 
-def create_tech_etf_recommendation(ratio: float) -> Recommendation:
-    """Creates a high-growth tech ETF recommendation."""
-    return Recommendation(
-        product_name="Global Tech ETF",
-        confidence=0.95,
-        reason=f"Based on your high investment ratio ({ratio:.1%}), you could benefit from diversified tech exposure.",
-        type="INVESTMENT"
-    )
+@app.get("/")
+def health_check():
+    return {"status": "AI Banking Engine Online", "version": "2.0-Strategic"}
 
-def create_reit_recommendation() -> Recommendation:
-    """Creates a real estate investment recommendation."""
-    return Recommendation(
-        product_name="Real Estate REIT",
-        confidence=0.88,
-        reason="You have steady investment habits. Diversifying into Real Estate could stabilize your portfolio.",
-        type="INVESTMENT"
-    )
-
-def get_spending_recommendations(inv_ratio: float) -> List[Recommendation]:
-    """Evaluates spending habits to suggest investment products."""
-    recs = []
-    if is_high_investment(inv_ratio):
-        recs.append(create_tech_etf_recommendation(inv_ratio))
-    elif is_medium_investment(inv_ratio):
-        recs.append(create_reit_recommendation())
-    return recs
-
-def is_high_investment(ratio: float) -> bool:
-    """Predicate for high investment behavior."""
-    return ratio > 0.25
-
-def is_medium_investment(ratio: float) -> bool:
-    """Predicate for medium investment behavior."""
-    return ratio > 0.1
-
-# --- Risk Logic Decomposition ---
-
-def get_high_risk_product() -> Recommendation:
-    """Product for aggressive risk profiles."""
-    return Recommendation(
-        product_name="Luxury Growth Portfolio",
-        confidence=0.91,
-        reason="Your appetite for high risk aligns perfectly with our aggressive growth portfolio.",
-        type="INVESTMENT"
-    )
-
-def get_medium_risk_product() -> Recommendation:
-    """Product for balanced risk profiles."""
-    return Recommendation(
-        product_name="Secure Yield Savings",
-        confidence=0.85,
-        reason="Balancing growth with security: This account offers protected high-yield returns.",
-        type="SAVINGS"
-    )
-
-def get_low_risk_product() -> Recommendation:
-    """Product for conservative risk profiles."""
-    return Recommendation(
-        product_name="Premium Plus Savings",
-        confidence=0.98,
-        reason="Maximize your liquid capital with our safest high-yield option, ideal for low-risk tolerance.",
-        type="SAVINGS"
-    )
-
-def get_risk_recommendations(risk_level: str) -> List[Recommendation]:
-    """Maps risk level to specific financial products."""
-    risk_map = {
-        "High": get_high_risk_product,
-        "Medium": get_medium_risk_product,
-        "Low": get_low_risk_product
-    }
-    # Default to medium if unknown
-    generator = risk_map.get(risk_level, get_medium_risk_product)
-    return [generator()]
-
-# --- Liquidity Logic Decomposition ---
-
-def get_high_balance_product() -> Recommendation:
-    """Product for users with significant idle cash."""
-    return Recommendation(
-        product_name="Premium Plus Savings",
-        confidence=0.82,
-        reason="Holding substantial idle cash. Move funds here for 5.2% APY with instant liquidity.",
-        type="SAVINGS"
-    )
-
-def get_bridge_loan_product() -> Recommendation:
-    """Product for high-income users with low liquidity."""
-    return Recommendation(
-        product_name="Flexi-Loan Silver",
-        confidence=0.75,
-        reason="Low liquidity detected despite high income. Use our Flexi-Loan for immediate bridging needs.",
-        type="LOAN"
-    )
-
-def get_liquidity_recommendations(balance: float, income: float) -> List[Recommendation]:
-    """Analyzes cash flow and balance to suggest liquidity solutions."""
-    recs = []
-    if has_high_idle_cash(balance):
-        recs.append(get_high_balance_product())
-    
-    if needs_bridging_loan(balance, income):
-        recs.append(get_bridge_loan_product())
-    return recs
-
-def has_high_idle_cash(balance: float) -> bool:
-    """Predicate for high liquidity surplus."""
-    return balance > 20000
-
-def needs_bridging_loan(balance: float, income: float) -> bool:
-    """Predicate for potential loan need."""
-    return balance < 1000 and income > 4000
-
-# --- Main Endpoint ---
-
-@app.post("/recommend", response_model=List[Recommendation])
-async def get_recommendations(data: UserData):
-    """
-    Main entry point for AI recommendations.
-    
-    Aggregates logic from spending habits, risk profiles, and liquidity status
-    to provide the top 3 personalized financial products.
-    """
-    logger.info(f"Processing recommendations for user {data.user_id}")
-    
+@app.post("/recommend")
+def recommend_from_profile(user: UserFinancials):
     try:
-        inv_ratio = data.spending_habits.get("investment_ratio", 0)
+        features = pd.DataFrame([[
+            user.credit_score, user.age, user.tenure, user.balance,
+            user.num_products, user.has_crcard, user.is_active,
+            user.salary, user.satisfaction
+        ]], columns=['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 
+                    'HasCrCard', 'IsActiveMember', 'EstimatedSalary', 'Satisfaction Score'])
         
-        recommendations = []
-        recommendations.extend(get_spending_recommendations(inv_ratio))
-        recommendations.extend(get_risk_recommendations(data.risk_level))
-        recommendations.extend(get_liquidity_recommendations(data.balance, data.monthly_income))
-
-        return select_top_recommendations(recommendations)
+        features_scaled = data_scaler.transform(features)
+        prediction = strategic_model.predict(features_scaled)[0]
+        
+        return {
+            "prediction": prediction,
+            "confidence": float(np.max(strategic_model.predict_proba(features_scaled)[0]))
+        }
     except Exception as e:
-        logger.error(f"Error generating recommendations: {str(e)}")
-        raise HTTPException(status_code=500, detail="Internal AI error")
+        raise HTTPException(status_code=500, detail=f"Recommendation Engine Error: {str(e)}")
 
-def select_top_recommendations(recs: List[Recommendation]) -> List[Recommendation]:
-    """Shuffles and truncates the list to ensure variety and brevity."""
-    random.shuffle(recs)
-    return recs[:3]
+@app.post("/chat")
+def intelligent_chat(request: ChatMessage):
+    try:
+        query = request.message.strip()
+        context = request.user_context or {}
+        msg_low = query.lower()
+        
+        # User dynamic data
+        user_name = context.get('name', 'amine')
+        balance = context.get('balance', 0)
+        salary = context.get('salary', 3000)
+        risk = context.get('risk_profile', 'Medium')
+        
+        # --- PROACTIVE INTELLIGENCE: Transaction Analysis ---
+        txs = context.get('transactions', [])
+        total_spent = sum(t.get('amount', 0) for t in txs if t.get('amount', 0) > 0)
+        
+        # --- HYBRID ROUTING ---
+        
+        # 1. Identity & Profile
+        if any(w in msg_low for w in ["who am i", "my name", "profile", "identity"]):
+            return {"response": f"You are {user_name}, a valued Proxym member. Your account shows a {risk} risk profile with a current balance of ${balance:,.2f}."}
+
+        # 2. Account Health (Balance & Spending)
+        if any(w in msg_low for w in ["balance", "money", "much i have", "funds"]):
+            status = "healthy" if balance > 1000 else "critical" if balance < 0 else "low"
+            advice = "You might want to check your recent overshoots." if status == "critical" else "You're in a great position to invest!"
+            return {"response": f"Your current status is {status.upper()} (${balance:,.2f}). {advice}"}
+
+        if any(w in msg_low for w in ["spend", "analyze", "history", "transactions", "buying"]):
+            if not txs:
+                return {"response": "I see no recent transactions to analyze. Start by adding one in your dashboard!"}
+            return {"response": f"Analysis Complete: You've had {len(txs)} interactions recently, totaling ${total_spent:,.2f}. Your balance is currently ${balance:,.2f}. Recommended: Reduce Entertainment spending to improve your health score."}
+
+        # 3. Strategy & Expert Advice (RAG + Strategic Model Intelligence)
+        if any(w in msg_low for w in ["advice", "invest", "suggest", "help", "loan", "how can i"]):
+            # Use the index we built from 100,000 real banking patterns
+            query_vector = kb_model.encode([query])
+            distances, indices = kb_index.search(np.array(query_vector).astype('float32'), k=1)
+            ctx = kb_data[indices[0][0]]
+            
+            # Smart logic based on balance
+            if balance < 0:
+                return {"response": f"Before investing, we should address your negative balance. Strategic Tip: {ctx}. Proxym suggests a micro-loan or balance transfer."}
+            return {"response": f"PROXIM STRATEGY: {ctx}. For your ${salary:,.2f} income level, this is the optimal move."}
+
+        # 4. Smart Multi-Response (Fallback)
+        return {
+            "response": f"Hello {user_name}! I'm Proxym AI. I've analyzed your ${balance:,.2f} balance and recent activity. Try asking me:\n"
+                        "• 'Analyze my transaction history'\n"
+                        "• 'How much did I spend recently?'\n"
+                        "• 'Give me a strategic investment tip'"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI Brain Error: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
